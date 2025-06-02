@@ -273,7 +273,8 @@ transition: opacity 150ms linear;
   } */
 
   .kalakaar{
-    background: linear-gradient(to top right ,#5eaff7 50% , #3998ed 50% );
+    background: linear-gradient(to top right ,#5eb0f759 50% , #3999ed63 50% );
+    /* background-color: rgba(123, 191, 250, 0.478); */
     min-height:100vh;
   }
   /* #5eaff7; */

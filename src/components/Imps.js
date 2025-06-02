@@ -110,6 +110,8 @@ const Imps = () => {
     const [ amount ,setAmount ] = React.useState("");
     const [anchorEl, setAnchorEl] = React.useState(null);
 
+    console.log("bank type : ",bankType, "  ifsc : ",ifsc);
+
 
   const openMenu = Boolean(anchorEl);
 
@@ -193,12 +195,7 @@ const Imps = () => {
 
     setActiveBack(true);
 
-     
-    
-    
     try{
-
-
 
       const api  = process.env.REACT_APP_AXIOS_URL;
       const apiUrl = `${api}/api/dmt_utility_order`;
@@ -209,7 +206,7 @@ const Imps = () => {
       const success = "Success";
       const error = "Error";
   
-      const json = await ApiFile({"apiUrl":apiUrl , "method":method, "authAccess":authAccess, "bodyData":{...jsonObject, "amount":jsonObject?.amount ? jsonObject?.amount : ammount  ,"is_verify":selectedValue=="verify" && checked ? 1 : checked && selectedValue=='transfer' ? 1 : 0, "fundTransfer":checked && selectedValue=='transfer' ? 1  : !checked && selectedValue=='transfer' ? 1 : 0} });
+      const json = await ApiFile({"apiUrl":apiUrl , "method":method, "authAccess":authAccess, "bodyData":{...jsonObject, "amount":jsonObject?.amount ? jsonObject?.amount : ammount, "remark":selectedValue  ,"is_verify":selectedValue=="verify" && checked ? 1 : checked && selectedValue=='transfer' ? 1 : 0, "fundTransfer":checked && selectedValue=='transfer' ? 1  : !checked && selectedValue=='transfer' ? 1 : 0} });
       
       console.log("bulk order json : ",json)
 
@@ -218,21 +215,14 @@ const Imps = () => {
         if(json.Status === "Success"){
 
           setHandleSuccess(true);
-
           setJsonSuccess(`${json.Message} `);
 
           setTimeout(() => {
             setCurrentIndex(index + 1);
           },800)
-
-
+          
           setActiveBack(false);
-
-          if(!jsonData){
-            fileInputRef.current.value=""
-          }
-
-
+          handleTableClose();
 
           // setTimeout(() => {
           //   setName("");
@@ -256,6 +246,7 @@ const Imps = () => {
           // setTimeout(() => {
           //   window.location.replace(process.env.REACT_APP_AXIOS_URL);
           // },800)
+          fileInputRef.current.value=""
         }
 
         if(json.status === "error"){
@@ -283,21 +274,22 @@ const Imps = () => {
           await callApiWithJsonObject(currentJsonObject, currentIndex)
 
 
-      }else if(  currentIndex !== 0 && jsonData.length >= currentIndex ){
-          setStatus('completed');
-          setHandleSuccess(true);
-          setTimeout(() => {
-           // setJsonSuccess('excel ordering completed');
+      }
+      // else if(  currentIndex !== 0 && jsonData.length >= currentIndex ){
+      //     setStatus('completed');
+      //     // setHandleSuccess(true);
+      //     setTimeout(() => {
+      //      // setJsonSuccess('excel ordering completed');
 
-            setImpsDialogue(true);
-            setImpsMessage("Your File Has Been Processed Successfully. Please Check Txn History For Details.");
+      //       // setImpsDialogue(true);
+      //       // setImpsMessage("Your File Has Been Processed Successfully. Please Check Txn History For Details.");
           
 
-            fileInputRef.current.value="";
-          },1000)
-          handleTableClose();
-          console.log("json data length : ",jsonData.length)
-      }
+      //       fileInputRef.current.value="";
+      //     },1000)
+      //     handleTableClose();
+      //     console.log("json data length : ",jsonData.length)
+      // }
     }
 
     console.log( "curent index : ", currentIndex, "  length : ",jsonData.length )
@@ -310,65 +302,68 @@ const Imps = () => {
     }
 
     const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+      const file = event.target.files[0];
+  
+      if (!file) return;
+  
+      const reader = new FileReader();
+  
+      reader.onload = (e) => {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+  
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const sheetData = XLSX.utils.sheet_to_json(sheet);
+  
+          const requiredHeaders = ['mobile_no', 'name', 'account_number', 'account_type', 'ifsc_code', "senderNumber", "bank_name" ];
+          const headers = Object.keys(sheetData[0]);
+          const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+  
+          if (missingHeaders.length > 0) {
+              setHandleErr(true);
+              setJsonError(`The following headers are missing => ${missingHeaders.join(', ')}`);
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+          } else {
+             const jsonSheet = sheetData.map(row => ({
+              ...row,
+              senderNumber: row.senderNumber ? row.senderNumber : "",  // Validate senderName
+              user_id: user_Id,
+              paymentType: "IMPS",
+              is_verify:
+                selectedValue === "verify" && checked
+                  ? 1
+                  : checked && selectedValue === "transfer"
+                  ? 1
+                  : 0,
+              fundTransfer:
+                checked && selectedValue === "transfer"
+                  ? 1
+                  : !checked && selectedValue === "transfer"
+                  ? 1
+                  : 0,
+            }));
 
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            const data = e.target.result;
-            
-            const workbook = XLSX.read(data, { type: 'binary' });
-
-            // Assuming the first sheet contains the data you want
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName]; 
-
-            // Convert sheet data to JSON format
-            const sheetData = XLSX.utils.sheet_to_json(sheet);
-
-            const requiredHeaders = ['mobile_no', 'name', 'account_number', 'account_type', 'ifsc_code' ];
-
-            // Validate headers
-            const headers = Object.keys(sheetData[0]);
-            const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
-
-            if (missingHeaders.length > 0) {
-                // Display error message for missing headers
-                setHandleErr(true);
-                setJsonError(`The following headers are missing => ${missingHeaders.join(', ')}`);
-                setTimeout(() => {
-                  window.location.reload();
-                },1500)
-                return;
-            } else {
-                // Clear any previous error message
-
-                // Log JSON data to the console
-                console.log(sheetData);
-            }
-
-            // { "user_id":userid, "mobile_no":phoneNumber, "name":name, "account_number":account, 4
-            // "account_type":accountType, "ifsc_code":ifsc, "amount":ammount, "mode":"IMPS", "remark":"testing" }
-
-            // Set JSON data to state
-            const jsonSheet = sheetData?.map( row =>  ({ ...row, "user_id":user_Id,  "mode":"IMPS", "remark":"Verifying Details", "is_verify":selectedValue=="verify" && checked ? 1 : checked && selectedValue=='transfer' ? 1 : 0, "fundTransfer":checked && selectedValue=='transfer' ? 1  : !checked && selectedValue=='transfer' ? 1 : 0  }) )
-            setJsonData(jsonSheet);
-
-            console.log("json sheet : ",jsonSheet)
-
-
-            if(sheetData){
-              setOpenTable(true);
-            }
-
-            console.log(sheetData);
-
-
-        };
-
-        reader.readAsBinaryString(file);
-    };
+  
+              setJsonData(jsonSheet);
+              console.log("json sheet : ", jsonSheet);
+  
+              if (sheetData) {
+                setOpenTable(true);
+              }
+          }
+  
+          // ✅ Clear file input so same file can be selected again
+          if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+          }
+      };
+  
+      reader.readAsBinaryString(file);
+  };
+  
     console.log(jsonData)
 
 
@@ -404,7 +399,7 @@ const Imps = () => {
 
     const handlelExcel = (e) => {     
       
-      const data = [[ 'mobile_no', 'name', 'account_number', 'account_type', 'ifsc_code' ]]
+      const data = [[ 'mobile_no', 'name', 'account_number', 'account_type', 'ifsc_code', "senderNumber", "bank_name" ]]
 
      const workbook = XLSX.utils.book_new();
      const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -414,11 +409,11 @@ const Imps = () => {
      const excelBuffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-     saveAs(blob, `sample.xlsx`);
+     saveAs(blob, `verify_benificary.xlsx`);
  };
 
   const handleTxnExcel = () => {
-    const data = [[ 'mobile_no', 'name', 'account_number', 'account_type', 'ifsc_code', 'amount', "senderNumber"]]
+    const data = [[ 'mobile_no', 'name', 'account_number', 'account_type', 'ifsc_code', 'amount', "senderNumber", "bank_name"]]
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -428,7 +423,7 @@ const Imps = () => {
     const excelBuffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-    saveAs(blob, `sample.xlsx`);
+    saveAs(blob, `fund_transfer.xlsx`);
   }
 
     
@@ -494,10 +489,10 @@ const Imps = () => {
       const apiUrl = `${api}/api/dmt_utility_order`;
       const method = "POST";
   
-      const json = await ApiFile({"apiUrl":apiUrl, "method":method, "authAccess":authAccess, "bodyData":{ "user_id":userid, "mobile_no":phoneNumber, "senderNumber":senderNumber ,"name":name, "account_number":account, "account_type":accountType, "amount":selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? amount : ammount , "mode":"IMPS", "remark":"testing", "is_verify":selectedValue=="verify" && checked ? 1 : checked && selectedValue=='transfer' ? 1 : 0, "fundTransfer":checked && selectedValue=='transfer' ? 1  : !checked && selectedValue=='transfer' ? 1 : 0, ...bankType, "paymentType":"IMPS" } });
+      const json = await ApiFile({"apiUrl":apiUrl, "method":method, "authAccess":authAccess, "bodyData":{ "user_id":userid, "mobile_no":phoneNumber, "senderNumber":senderNumber ,"name":name, "account_number":account, "account_type":accountType, "amount":selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? amount : ammount , "mode":"IMPS", "remark":"testing", "is_verify":selectedValue=="verify" && checked ? 1 : checked && selectedValue=='transfer' ? 1 : 0, "fundTransfer":checked && selectedValue=='transfer' ? 1  : !checked && selectedValue=='transfer' ? 1 : 0, "bank_name":bankType?.bank_name, "ifsc_code":ifsc , "paymentType":"IMPS" } });
       
 
-  
+      
   
           // const fetchData = await fetch(`${url}/api/dmt_order`, {
           //   method:"POST",
@@ -517,7 +512,7 @@ const Imps = () => {
           setDmtProgress(false)
   
           if(json){
-            if(json.Status === "Success" || "Success".toLowerCase() ){
+            if(json.Status === "Success" ){
               // window.alert("order placed successfully");
               // window.alert(json.Message.response_msg);
               // setJsonSuccess(true);
@@ -536,7 +531,7 @@ const Imps = () => {
                 setBankName();
                 setAmount("");
                 setPhoneNumber("");
-                window.location.reload();
+                // window.location.reload();
               },1500)
   
             }
@@ -547,6 +542,8 @@ const Imps = () => {
 
               setImpsErrorDialogue(true);
               setImpsErrorMsg(json.Message);
+              setImpsDialogue(false);
+
 
             }
 
@@ -630,7 +627,7 @@ const Imps = () => {
   const userRecordTab = () => {
     fileInputRef.current.value=""
     setOpenTable(false);
-    setSelectedValue("");
+    // setSelectedValue("");
   }
 
   const handleAmount = (value) => {
@@ -834,7 +831,7 @@ const Imps = () => {
         
         
         <Box 
-        // className="kalakaar"
+        className="kalakaar"
          sx={{ minHeight:"100vh" }} >
 
           <AppBar position='sticky' >
@@ -938,7 +935,7 @@ const Imps = () => {
 
 
 
-          <TextField autoComplete='off' label={ selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? "Enter Amount" :  "Default Amount" } InputLabelProps={{ style:{ fontFamily:'montserrat', fontWeight:500, color:"#1d1db8" } }}  type="number" value={ selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? amount : ammount} onChange={(e) => selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? handleAmount(e.target.value) : ammount   } id="hover" inputProps={{  style:{  fontFamily:"montserrat", fontWeight:500 } }} sx={{ width:{xs:"20rem", md:"20rem" }, fontSize:'1rem' ,fontWeight:"500" , margin:"0.5rem",fontFamily:"montserrat",  "input::-webkit-outer-spin-button, input::-webkit-inner-spin-button": {
+          <TextField autoComplete='off' label={ selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? "Enter Amount" :  "Amount" } InputLabelProps={{ style:{ fontFamily:'montserrat', fontWeight:500, color:"#1d1db8" } }}  type="number" value={ selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? amount : ammount} onChange={(e) => selectedValue==="transfer" && checked || selectedValue==="transfer" && !checked ? handleAmount(e.target.value) : ammount   } id="hover" inputProps={{  style:{  fontFamily:"montserrat", fontWeight:500 } }} sx={{ width:{xs:"20rem", md:"20rem" }, fontSize:'1rem' ,fontWeight:"500" , margin:"0.5rem",fontFamily:"montserrat",  "input::-webkit-outer-spin-button, input::-webkit-inner-spin-button": {
     WebkitAppearance: "none",
     margin: 0,
   },
@@ -971,6 +968,31 @@ const Imps = () => {
 
         </Box>
 
+        <FormControl sx={{ width:"20rem" }} fullWidth >
+              <InputLabel id="demo-simple-select-filled-label" InputLabelProps={{ style:{ color:"" } }} sx={{fontFamily:"montserrat", color:'#1d1db8', fontWeight:500 }} >Select Mode</InputLabel>
+
+                <Select
+                  value={selectedValue}
+                  label="Select Mode"
+                  onChange={handleRadioChange}
+                  placeholder=' account type'
+                  InputLabelProps={{ style:{ } }}
+                  sx={{ fontFamily:"montserrat" , fontWeight:"500", width:{xs:"20rem", md:"20rem", lg:"20rem" } }}
+                >
+
+      <MenuItem  value="verify"  sx={{ fontSize: '0.8rem', fontFamily: 'Montserrat', fontWeight: 500 }} >
+          Verify Beneficiary
+      </MenuItem>
+
+<MenuItem value="transfer" sx={{ fontSize: '0.8rem', fontFamily: 'Montserrat', fontWeight: 500 }} >
+          Fund Transfer
+</MenuItem>
+
+                 
+                </Select>
+          </FormControl>
+
+
         <Box sx={{ display:"flex", alignItems:"center", justifyContent:"flex-start" }} >
           <Checkbox
           checked={checked}
@@ -981,7 +1003,7 @@ const Imps = () => {
         </Box>
 
         <Box>
-  <RadioGroup
+  {/* <RadioGroup
     row
     name="form-options"
     defaultValue="female" // Optional: set default selected option
@@ -1006,11 +1028,12 @@ const Imps = () => {
         </Typography>
       }
     />
-  </RadioGroup>
+  </RadioGroup> */}
+  
 </Box>
 
         <Box sx={{ display:'flex' , alignItems:'center' , flexDirection:{md:'row',sm:'column' , xs:"column"  }, marginTop:1, gap:3 }} >
-        <input ref={fileInputRef} type="file" accept=".xlsx, .xls" onChange={handleFileChange} style={{ width:"15rem" }} />
+        <input ref={fileInputRef} arial-hidden={true} type="file" accept=".xlsx, .xls" onChange={ (e) => { handleFileChange(e); e.target.value = ""}} style={{ width:"15rem" }} />
         <Button onClick={(e) => handleMenuClick(e)} variant='outlined' startIcon={ <DownloadingIcon/> } >sample</Button>
         </Box >
           
@@ -1082,10 +1105,10 @@ const Imps = () => {
               </StyledTableCell>
               <StyledTableCell align="center">{row.account_number}</StyledTableCell>
               <StyledTableCell align="center">{row.account_type}</StyledTableCell>
-              <StyledTableCell align="center">{row.amount}</StyledTableCell>
+              <StyledTableCell align="center">{  row.amount ? row.amount : "1"}</StyledTableCell>
               <StyledTableCell align="center">{row.ifsc_code}</StyledTableCell>
-              <StyledTableCell align="center">{row.mode}</StyledTableCell>
-              <StyledTableCell align="center">{row.remark}</StyledTableCell>
+              <StyledTableCell align="center">IMPS</StyledTableCell>
+              <StyledTableCell align="center">{selectedValue}</StyledTableCell>
               <StyledTableCell align="center">{row.mobile_no}</StyledTableCell>
 
             </StyledTableRow>
@@ -1093,7 +1116,7 @@ const Imps = () => {
         </TableBody>
       </Table>
     </TableContainer>
-    <Box sx={{ display:"flex", alignItems:"center", justifyContent:"flex-start", mt:1 }} >
+    {/* <Box sx={{ display:"flex", alignItems:"center", justifyContent:"flex-start", mt:1 }} >
           <Checkbox
           checked={checked}
           onChange={handleCheckChange}
@@ -1129,7 +1152,7 @@ const Imps = () => {
       }
     />
   </RadioGroup>
-</Box>
+</Box> */}
 
 
         </DialogContent>
@@ -1169,10 +1192,10 @@ const Imps = () => {
         open={impsDialogue}
         TransitionComponent={Transition}
         keepMounted
-        // onClose={handleImpsClose}
+        onClose={handleImpsClose}
         aria-describedby="alert-dialog-slide-description"
       >
-        <DialogTitle sx={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <DialogTitle sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:"10rem" }}>
           <Box component="img" src={eezib} sx={{ width:"3rem" }} />
           <Typography sx={{ fontFamily:"montserrat", fontWeight:500, textTransform:'capitalize' }} >Verification Completed</Typography>
           <CloseIcon onClick={() => window.location.reload() } sx={{ cursor:'pointer' }} />
