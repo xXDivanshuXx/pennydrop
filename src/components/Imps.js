@@ -216,6 +216,7 @@ const Imps = () => {
 
           setHandleSuccess(true);
           setJsonSuccess(`${json.Message} `);
+          setImpsMessage(json.Message)
 
           setTimeout(() => {
             setCurrentIndex(index + 1);
@@ -397,7 +398,7 @@ const Imps = () => {
 
 
 
-    const handlelExcel = (e) => {     
+    const handlelExcel = (e) => {       
       
       const data = [[ 'mobile_no', 'name', 'account_number', 'account_type', 'ifsc_code', "senderNumber", "bank_name" ]]
 
@@ -872,7 +873,30 @@ const Imps = () => {
           <Grid className='form' style={{ display:'flex' , alignItems:"center" , justifyContent:'center' , flexDirection:"column" }} >  
           <Typography className=' text-blue-500' sx={{  fontFamily:"montserrat" , fontWeight:"700",fontSize:{sm:"1.5rem" , md:"2rem", xs:"1.5rem"} }} >Eezib  <span className=' text-white' > Payment Transfer </span> </Typography> &nbsp;
 
-          <Box sx={{ display:"flex" , alignItems:"center" , flexDirection:{md:"row",sm:'column',xs:"column"} }} >
+                  <FormControl sx={{ width:"20rem" }} fullWidth >
+              <InputLabel id="demo-simple-select-filled-label" InputLabelProps={{ style:{ color:"" } }} sx={{fontFamily:"montserrat", color:'#1d1db8', fontWeight:500 }} >Select Mode</InputLabel>
+
+                <Select
+                  value={selectedValue}
+                  label="Select Mode"
+                  onChange={handleRadioChange}
+                  placeholder=' account type'
+                  InputLabelProps={{ style:{ } }}
+                  sx={{ fontFamily:"montserrat" , fontWeight:"500", width:{xs:"20rem", md:"20rem", lg:"20rem" } }}
+                >
+
+      <MenuItem  value="verify"  sx={{ fontSize: '0.8rem', fontFamily: 'Montserrat', fontWeight: 500 }} >
+          Verify Beneficiary
+      </MenuItem>
+
+<MenuItem value="transfer" sx={{ fontSize: '0.8rem', fontFamily: 'Montserrat', fontWeight: 500 }} >
+          Fund Transfer
+</MenuItem>
+
+                </Select>
+          </FormControl>
+
+          <Box sx={{ display:"flex" , alignItems:"center" , flexDirection:{md:"row",sm:'column',xs:"column"}, mt:2 }} >
 
           <TextField autoComplete='off' label="Enter Name" InputLabelProps={{ style:{ fontFamily:'montserrat', fontWeight:500, color:"#1d1db8" } }} inputProps={{ style:{ fontFamily:"montserrat", fontWeight:500 } }} variant='outlined' onChange={((e) => setName(e.target.value))} value={name} id="hover"  sx={{ width:{xs:"20rem", md:"20rem" }, color:"white" ,fontSize:'1rem', fontFamily:"montserrat", margin:"0.5rem" , fontWeight:"500" }}  />
 
@@ -968,29 +992,7 @@ const Imps = () => {
 
         </Box>
 
-        <FormControl sx={{ width:"20rem" }} fullWidth >
-              <InputLabel id="demo-simple-select-filled-label" InputLabelProps={{ style:{ color:"" } }} sx={{fontFamily:"montserrat", color:'#1d1db8', fontWeight:500 }} >Select Mode</InputLabel>
 
-                <Select
-                  value={selectedValue}
-                  label="Select Mode"
-                  onChange={handleRadioChange}
-                  placeholder=' account type'
-                  InputLabelProps={{ style:{ } }}
-                  sx={{ fontFamily:"montserrat" , fontWeight:"500", width:{xs:"20rem", md:"20rem", lg:"20rem" } }}
-                >
-
-      <MenuItem  value="verify"  sx={{ fontSize: '0.8rem', fontFamily: 'Montserrat', fontWeight: 500 }} >
-          Verify Beneficiary
-      </MenuItem>
-
-<MenuItem value="transfer" sx={{ fontSize: '0.8rem', fontFamily: 'Montserrat', fontWeight: 500 }} >
-          Fund Transfer
-</MenuItem>
-
-                 
-                </Select>
-          </FormControl>
 
 
         <Box sx={{ display:"flex", alignItems:"center", justifyContent:"flex-start" }} >
@@ -1195,10 +1197,9 @@ const Imps = () => {
         onClose={handleImpsClose}
         aria-describedby="alert-dialog-slide-description"
       >
-        <DialogTitle sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:"10rem" }}>
-          <Box component="img" src={eezib} sx={{ width:"3rem" }} />
-          <Typography sx={{ fontFamily:"montserrat", fontWeight:500, textTransform:'capitalize' }} >Verification Completed</Typography>
-          <CloseIcon onClick={() => window.location.reload() } sx={{ cursor:'pointer' }} />
+        <DialogTitle sx={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <Box component="img" src={eezib} sx={{ width:{lg:"3rem", sm:"3rem", sm:'3rem', xs:"2rem"} }} />
+          <CloseIcon onClick={() => window.location.reload() } sx={{ cursor:'pointer', right:10 , position:"absolute" }} />
         </DialogTitle>
         <Divider variant='middle' />
         <DialogContent sx={{ display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:2 }} >
@@ -1231,8 +1232,7 @@ const Imps = () => {
       >
         <DialogTitle sx={{ display:'flex', alignItems:'center', justifyContent:'space-between' }} >
           <Box component="img" src={eezib} sx={{ width:"3rem" }} />
-          <Typography sx={{ fontFamily:"montserrat", fontWeight:500, textTransform:'capitalize' }} >Verification Incompleted.</Typography>
-          <CloseIcon onClick={() => setImpsErrorDialogue(false)} sx={{ cursor:'pointer' }} />
+          <CloseIcon onClick={() => setImpsErrorDialogue(false)} sx={{ cursor:'pointer', right:10 , position:"absolute" }} />
         </DialogTitle>
         <Divider variant='middle' />
         <DialogContent sx={{ display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:2 }} >
